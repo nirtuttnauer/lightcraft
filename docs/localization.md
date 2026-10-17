@@ -113,6 +113,9 @@ For local builds, the checked-in snapshot works offline. Refresh it with
 `python3 packaging/release-history.py`, or pass `--input releases.json` to use a saved API
 response. Do not edit the generated file by hand. The highlights in `docs/whats-new.md`
 keep their development dates, which can precede publication.
+When a highlights heading matches a release's publication date, the dialog appends
+its version in parentheses, for example `2026-10-11 (v.0.6.0)`. Multiple releases on
+that date are listed together; dates without a published release stay unchanged.
 
 Help ▸ What's New shows `docs/release-history.md` followed by `docs/whats-new.md`, and each
 of its lines (a heading, or one wrapped line of a bullet, without the `- ` or `### `) is

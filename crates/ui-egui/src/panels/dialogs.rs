@@ -171,6 +171,18 @@ pub const ABOUT_TABS: &[(&str, &str)] = &[("about", "About"), ("contributors", "
 /// Help ▸ What's New: published release history followed by development highlights.
 pub const WHATS_NEW: &str = concat!(include_str!("../../../../docs/release-history.md"), "\n", include_str!("../../../../docs/whats-new.md"));
 
+fn whats_new_heading(heading: &str, history: &str) -> String {
+    let versions = history
+        .lines()
+        .filter_map(|line| line.strip_prefix("- ")?.split_once(" — "))
+        .filter_map(|(version, date)| (date == heading).then_some(version))
+        .map(|version| format!("v.{}", version.strip_prefix('v').unwrap_or(version)))
+        .collect::<Vec<_>>()
+        .join(", ");
+    let label = crate::i18n::tr(heading);
+    if versions.is_empty() { label.to_owned() } else { format!("{label} ({versions})") }
+}
+
 /// The import review and Settings keep window ids of their own, so the size each is given
 /// doesn't carry over to the other dialogs.
 fn window_id(dialog: &Dialog) -> egui::Id {
@@ -332,7 +344,8 @@ pub fn show(app: &mut LightcraftApp, ctx: &egui::Context) {
                                 ui.label(egui::RichText::new(crate::i18n::tr(h)).font(t.semibold(12.5)).color(t.text));
                             } else if let Some(h) = l.strip_prefix("## ") {
                                 ui.add_space(8.0);
-                                ui.label(egui::RichText::new(crate::i18n::tr(h)).font(t.semibold(14.0)).color(t.text));
+                                let heading = whats_new_heading(h, include_str!("../../../../docs/release-history.md"));
+                                ui.label(egui::RichText::new(heading).font(t.semibold(14.0)).color(t.text));
                             } else if l.starts_with("# ") || l.is_empty() {
                             } else if let Some(b) = l.strip_prefix("- ") {
                                 ui.label(egui::RichText::new(format!("•  {}", crate::i18n::tr(b).replace('`', ""))).color(t.text_label));
@@ -1903,6 +1916,21 @@ fn just_opened(ui: &egui::Ui, key: &str) -> bool {
     let last: Option<u64> = ui.data_mut(|d| d.get_temp(id));
     ui.data_mut(|d| d.insert_temp(id, pass));
     last.and_then(|l| l.checked_add(1)) != Some(pass)
+}
+
+#[cfg(test)]
+mod release_heading_tests {
+    use super::whats_new_heading;
+
+    #[test]
+    fn date_headings_show_only_releases_published_on_that_date() {
+        let history = "## Release history\n- v0.6.1 — 2026-10-11\n- v0.6.0 — 2026-10-11\n- v0.5.0 — 2026-10-10\n";
+        assert_eq!(whats_new_heading("2026-10-11", history), "2026-10-11 (v.0.6.1, v.0.6.0)");
+        assert_eq!(whats_new_heading("2026-10-10", history), "2026-10-10 (v.0.5.0)");
+        assert_eq!(whats_new_heading("2026-10-09", history), "2026-10-09");
+        assert_eq!(whats_new_heading("Release history", history), "Release history");
+        assert_eq!(whats_new_heading("2026-10-11", ""), "2026-10-11");
+    }
 }
 
 #[cfg(test)]

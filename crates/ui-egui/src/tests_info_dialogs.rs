@@ -33,6 +33,19 @@ fn whats_new_displays_the_generated_release_history() {
     if let Some(release) = history.lines().find_map(|line| line.strip_prefix("- ")) {
         assert!(text.iter().any(|t| t == &format!("•  {release}")), "latest published version and date are visible: {text:?}");
     }
+    if let Some(date) = include_str!("../../../docs/whats-new.md").lines().find_map(|line| line.strip_prefix("## ")) {
+        let versions = history
+            .lines()
+            .filter_map(|line| line.strip_prefix("- ")?.split_once(" — "))
+            .filter_map(|(version, published)| (published == date).then_some(version))
+            .map(|version| format!("v.{}", version.strip_prefix('v').unwrap_or(version)))
+            .collect::<Vec<_>>()
+            .join(", ");
+        if !versions.is_empty() {
+            let heading = format!("{date} ({versions})");
+            assert!(text.iter().any(|t| t == &heading), "the dated heading includes its published version: {text:?}");
+        }
+    }
 }
 
 #[test]
